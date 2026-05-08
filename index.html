@@ -221,7 +221,7 @@
 
         function sendToServer(data) {
     // *** สำคัญ: เอา URL ที่ได้จากการ Deploy ในข้อ 1 มาใส่ที่นี่ ***
-    const gasUrl = "https://script.google.com/macros/s/AKfycbxSDYlrFHZ-3EBpP1WARCapdACL4IzRjFLCxhDPwmrNjyXvh1YDHC6Kvmr7OJi9LPtLAQ/exec";
+    const gasUrl = "https://script.google.com/macros/s/AKfycbyxx1gZtMvR2kqODSCzRzOsUfbBLGxlJh5HzyGHhZMv8Y4TyjYNieFwNPHSn3O4UxsaAw/exec";
 
     // ตรวจสอบสถานะเน็ตก่อนส่ง
     if (!navigator.onLine) {
@@ -244,7 +244,6 @@
     
     fetch(gasUrl, {
         method: "POST",
-        mode: "no-cors", // ใช้ no-cors เพื่อป้องกันปัญหาความปลอดภัยข้ามโดเมนในบางกรณี
         body: JSON.stringify(data)
     })
     .then(() => {
@@ -279,44 +278,55 @@ function checkOfflineData() {
 }
 
 function syncOfflineData(queue) {
-    const gasUrl = "https://script.google.com/macros/s/AKfycbwQTv99cLDEvW8hAGZsy0OYiKSpF7cTQvTfxcs0MDa0hywGBCMrF-rWAczR8vlUmEpYJA/exec";
+    const gasUrl = "https://script.google.com/macros/s/AKfycbyxx1gZtMvR2kqODSCzRzOsUfbBLGxlJh5HzyGHhZMv8Y4TyjYNieFwNPHSn3O4UxsaAw/exec";
     if (queue.length === 0) {
         localStorage.removeItem('sos_offline_queue');
         Swal.fire('สำเร็จ', 'ซิงค์ข้อมูลทั้งหมดแล้ว', 'success');
         return;
     }
     const item = queue.shift();
-    fetch(gasUrl, { method: "POST", mode: "no-cors", body: JSON.stringify(item) })
+    fetch(gasUrl, { method: "POST", body: JSON.stringify(item) })
         .then(() => syncOfflineData(queue))
         .catch(() => Swal.fire('เกิดข้อผิดพลาด', 'บางรายการส่งไม่สำเร็จ กรุณาลองใหม่ภายหลัง', 'error'));
 }
         function searchData() {
-            const hn = document.getElementById('hnInput').value;
-            if (!hn) return Swal.fire('โปรดระบุ HN เพื่อค้นหา');
-            google.script.run.withSuccessHandler(data => {
-                if (!data) return Swal.fire('ไม่พบประวัติ', 'ยังไม่เคยมีการบันทึกข้อมูลสำหรับ HN นี้', 'info');
-                document.getElementById('historySection').classList.remove('hidden');
-                document.getElementById('searchHn').innerText = hn;
-                let html = '';
-                data.forEach(row => {
-                    html += `<tr class="hover:bg-pink-50 border-b border-pink-100">
-                        <td class="p-3">${row[0]}</td>
-                        <td class="p-3 text-center font-bold text-lg">${row[10]}</td>
-                        <td class="p-3 font-medium">${row[11]}</td>
-                        <td class="p-3 text-xs">${row[14]}</td>
-                    </tr>`;
-                });
-                document.getElementById('historyBody').innerHTML = html;
-            }).searchByHN(hn);
-        }
-    </script>
-       if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').then(reg => {
-        console.log('PWA Ready!');
-      }).catch(err => console.log('SW Error', err));
-    });
-  }
+    const hn = document.getElementById('hnInput').value;
+    const gasUrl = "https://script.google.com/macros/s/AKfycbyxx1gZtMvR2kqODSCzRzOsUfbBLGxlJh5HzyGHhZMv8Y4TyjYNieFwNPHSn3O4UxsaAw/exec";
+
+    if (!hn) return Swal.fire('โปรดระบุ HN เพื่อค้นหา');
+
+    Swal.fire({ title: 'กำลังค้นหา...', didOpen: () => Swal.showLoading() });
+
+    fetch(gasUrl + "?hn=" + hn) // ส่งแบบ GET ไปที่ Google Script
+        .then(res => res.json())
+        .then(data => {
+            Swal.close();
+            if (!data || data.length === 0) return Swal.fire('ไม่พบประวัติ', 'ยังไม่เคยมีการบันทึกข้อมูลสำหรับ HN นี้', 'info');
+            
+            document.getElementById('historySection').classList.remove('hidden');
+            document.getElementById('searchHn').innerText = hn;
+            let html = '';
+            data.forEach(row => {
+                html += `<tr class="hover:bg-pink-50 border-b border-pink-100">
+                    <td class="p-3">${row[0]}</td>
+                    <td class="p-3 text-center font-bold text-lg">${row[10]}</td>
+                    <td class="p-3 font-medium">${row[11]}</td>
+                    <td class="p-3 text-xs">${row[14]}</td>
+                </tr>`;
+            });
+            document.getElementById('historyBody').innerHTML = html;
+        })
+        .catch(err => Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error'));
+}
+    // ส่วนของ PWA Service Worker (ต้องอยู่ในแท็ก script เดียวกัน)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                console.log('PWA Ready!');
+            }).catch(err => console.log('SW Error', err));
+        });
+    }
 </script>
 </body>
+</html>
 </html>
